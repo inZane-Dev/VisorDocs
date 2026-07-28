@@ -1,0 +1,32 @@
+[versions]
+# Herramientas de compilacion.
+# AGP 8.13.2 es la ultima version de la linea 8.x. Se prefiere sobre AGP 9.x porque
+# esta usa un DSL nuevo y Kotlin integrado, lo que exigiria una configuracion distinta.
+agp = "8.13.2"
+kotlin = "2.2.20"
+
+# Librerias de Android.
+activityCompose = "1.13.0"
+composeBom = "2026.06.01"
+fragmentCompose = "1.8.9"
+material = "1.14.0"
+
+# Visor de PDF oficial de Jetpack. Sigue en alpha: fijar la version exacta.
+pdfViewerFragment = "1.0.0-alpha19"
+
+[libraries]
+androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }
+androidx-compose-bom = { group = "androidx.compose", name = "compose-bom", version.ref = "composeBom" }
+androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3" }
+androidx-compose-ui = { group = "androidx.compose.ui", name = "ui" }
+androidx-compose-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics" }
+androidx-compose-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
+androidx-compose-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
+androidx-fragment-compose = { group = "androidx.fragment", name = "fragment-compose", version.ref = "fragmentCompose" }
+androidx-pdf-viewer-fragment = { group = "androidx.pdf", name = "pdf-viewer-fragment", version.ref = "pdfViewerFragment" }
+google-android-material = { group = "com.google.android.material", name = "material", version.ref = "material" }
+
+[plugins]
+android-application = { id = "com.android.application", version.ref = "agp" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }

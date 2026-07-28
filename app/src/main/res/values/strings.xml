@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">VisorDocs</string>
+
+    <!-- Etiqueta que aparece en el menú "Abrir con" del sistema. -->
+    <string name="open_with_label">Abrir en VisorDocs</string>
+
+    <!-- Pantalla de inicio -->
+    <string name="home_subtitle">Elige un documento para verlo, o ábrelo directamente desde WhatsApp, Gmail o Archivos.</string>
+    <string name="open_document">Abrir documento</string>
+    <string name="pdf_engine_label">Motor de PDF: %1$s</string>
+
+    <!-- Visor -->
+    <string name="back">Volver</string>
+    <string name="loading">Cargando…</string>
+    <string name="loading_document">Abriendo el documento…</string>
+    <string name="page_number">Página %1$d</string>
+
+    <!-- Errores y formatos -->
+    <string name="error_open_title">No se pudo abrir el documento</string>
+    <string name="error_open_body">El archivo puede estar dañado o incompleto. Intenta descargarlo de nuevo.</string>
+    <string name="error_password_title">Documento protegido</string>
+    <string name="error_password_legacy_body">Este PDF pide contraseña y el motor disponible en tu dispositivo no admite contraseñas.</string>
+    <string name="unsupported_format_title">%1$s: aún no disponible</string>
+    <string name="unsupported_format_body">Esta versión abre solamente archivos PDF. El soporte para documentos de Office llegará en una actualización.</string>
+    <string name="unknown_format_title">Formato no reconocido</string>
+    <string name="unknown_format_body">No se pudo identificar el tipo de archivo. Comprueba que sea un documento válido.</string>
+</resources>
