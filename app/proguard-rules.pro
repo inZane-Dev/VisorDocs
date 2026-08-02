@@ -5,3 +5,19 @@
 
 # Los fragments se instancian por nombre de clase.
 -keep public class * extends androidx.fragment.app.Fragment
+
+# PDFBox resuelve por reflexion y por nombre buena parte de su maquinaria: filtros de
+# compresion, manejadores de fuentes y los recursos que carga desde los assets. Con R8
+# recortando, la union de PDF fallaba en release aunque funcionase en debug.
+-keep class com.tom_roush.pdfbox.** { *; }
+-keep class com.tom_roush.fontbox.** { *; }
+-keep class com.tom_roush.harmony.** { *; }
+-dontwarn com.tom_roush.**
+
+# PDFBox arrastra referencias a clases de Java de escritorio (AWT, Swing, ImageIO) que en
+# Android no existen. No se usan en los caminos que recorre la app, pero R8 avisa de
+# ellas si no se le indica que las ignore.
+-dontwarn java.awt.**
+-dontwarn javax.imageio.**
+-dontwarn javax.xml.**
+-dontwarn org.apache.**

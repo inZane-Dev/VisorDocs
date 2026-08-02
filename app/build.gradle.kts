@@ -7,16 +7,21 @@ plugins {
 }
 
 android {
-    namespace = "com.deiby.visordocs"
+    namespace = "com.visordocs"
     compileSdk = 36
 
+    // androidx.pdf alpha19 exige compilar contra la SDK Extension 19; la imagen base
+    // de API 36 se queda en la 18. Requiere el paquete "platforms;android-36-ext19".
+    compileSdkExtension = 19
+
     defaultConfig {
-        applicationId = "com.deiby.visordocs"
+        applicationId = "com.visordocs"
         // minSdk 28 (Android 9): es el minimo que exige androidx.pdf.
         minSdk = 28
         targetSdk = 36
         versionCode = 1
         versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -37,6 +42,45 @@ android {
 
     buildFeatures {
         compose = true
+        // AGP 8 no genera BuildConfig salvo que se pida. Se necesita para que el
+        // registro del intent entrante solo exista en compilaciones de depuracion.
+        buildConfig = true
+    }
+
+    /**
+     * Lint forma parte de la compilacion, no es opcional.
+     *
+     * Se aprendio por las malas: durante mucho tiempo no se ejecuto nunca, y escondia un
+     * error real en el manifest (un MIME con mayusculas que no coincidia jamas).
+     *
+     * `warningsAsErrors` puede parecer excesivo, pero con la linea base los avisos que ya
+     * existen quedan aceptados y solo revientan los NUEVOS. Es la unica forma de que no
+     * se vuelvan a acumular sin que nadie los mire.
+     */
+    lint {
+        abortOnError = true
+        warningsAsErrors = true
+        baseline = file("lint-baseline.xml")
+        // No detiene la compilacion por no poder consultar si hay versiones mas nuevas.
+        disable += "AndroidGradlePluginVersion"
+
+        /*
+         * TrustAllX509TrustManager: tres avisos dentro de BouncyCastle, que PDFBox
+         * arrastra para poder abrir PDF cifrados. Contiene un gestor de certificados TLS
+         * vacio, el patron clasico de "aceptar cualquier certificado".
+         *
+         * Se descarta porque en esta app ese codigo es inalcanzable: el manifest no
+         * declara el permiso de Internet, asi que el proceso no puede abrir ninguna
+         * conexion de red. No es codigo propio y no se usa; eliminarlo significaria
+         * renunciar a los PDF con contrasena.
+         *
+         * Va aqui y no en la linea base a proposito. La linea base guarda la RUTA del
+         * archivo donde aparece el aviso, y la de estos es el .jar dentro de la cache de
+         * Gradle del equipo que la genero (".../Users/<usuario>/.gradle/caches/..."). En
+         * otro ordenador o en integracion continua esa ruta no existe, el aviso deja de
+         * coincidir y la compilacion se cae. Descartarlo por identificador es portable.
+         */
+        disable += "TrustAllX509TrustManager"
     }
 }
 
@@ -62,8 +106,32 @@ dependencies {
     // AndroidFragment(): permite incrustar el PdfViewerFragment dentro de Compose.
     implementation(libs.androidx.fragment.compose)
 
+    // ViewModel de la pantalla del visor: viewModel() y collectAsStateWithLifecycle().
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+
+    // Orientacion EXIF de las fotos. Se usa la version de androidx y no la del
+    // framework porque corrige fallos conocidos y reconoce mas formatos, HEIC incluido.
+    implementation(libs.androidx.exifinterface)
+
     // Motor principal de PDF.
     implementation(libs.androidx.pdf.viewer.fragment)
 
+    // Union de PDF. Android sabe leer PDF (PdfRenderer) y escribirlos desde cero
+    // (PdfDocument), pero no copiar una pagina de un documento a otro: para eso hay que
+    // manipular la estructura interna del formato, que es lo que hace PDFBox.
+    implementation(libs.pdfbox.android)
+
     debugImplementation(libs.androidx.compose.ui.tooling)
+
+    // Pruebas en la JVM: convertidores que no dependen de Android (RTF, CSV, SVG) y
+    // utilidades de lectura. Son funciones puras, asi que corren en milisegundos.
+    testImplementation(libs.junit)
+
+    // Pruebas en dispositivo: los convertidores de OOXML, OpenDocument y EPUB usan
+    // `android.util.Xml`, que solo existe en Android. Llevarlos a la JVM exigiria
+    // Robolectric o un parser alternativo; ejecutarlos en el emulador es mas fiel.
+    androidTestImplementation(libs.junit)
+    androidTestImplementation(libs.androidx.test.junit)
+    androidTestImplementation(libs.androidx.test.runner)
 }
