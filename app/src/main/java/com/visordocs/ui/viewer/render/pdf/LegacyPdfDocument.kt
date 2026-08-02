@@ -1,4 +1,4 @@
-package com.deiby.visordocs.viewer.pdf
+package com.visordocs.ui.viewer.render.pdf
 
 import android.content.Context
 import android.graphics.Bitmap

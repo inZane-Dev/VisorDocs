@@ -1,4 +1,4 @@
-package com.deiby.visordocs.ui.components
+package com.visordocs.ui.common
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Arrangement
@@ -17,12 +17,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import java.util.Locale
 
 /** Estado de carga a pantalla completa. */
 @Composable
 fun LoadingView(
-    message: String? = null,
     modifier: Modifier = Modifier,
+    message: String? = null,
 ) {
     Column(
         modifier = modifier.fillMaxSize().padding(32.dp),
@@ -91,4 +92,22 @@ fun MessageView(
             }
         }
     }
+}
+
+/**
+ * Formatea un tamano en bytes de forma legible, o null si se desconoce.
+ *
+ * El idioma es el del dispositivo a proposito: es un texto que lee una persona, y en
+ * espanol el separador decimal es la coma ("1,5 MB"). Se pasa el [Locale] de forma
+ * explicita porque depender del implicito es una fuente clasica de errores.
+ */
+fun formatFileSize(bytes: Long?): String? {
+    if (bytes == null || bytes < 0) return null
+    val locale = Locale.getDefault()
+    if (bytes < 1024) return "$bytes B"
+    val kb = bytes / 1024.0
+    if (kb < 1024) return String.format(locale, "%.0f KB", kb)
+    val mb = kb / 1024.0
+    if (mb < 1024) return String.format(locale, "%.1f MB", mb)
+    return String.format(locale, "%.1f GB", mb / 1024.0)
 }

@@ -1,4 +1,4 @@
-package com.deiby.visordocs.viewer.pdf
+package com.visordocs.ui.viewer.render.pdf
 
 import android.graphics.Bitmap
 import android.net.Uri
@@ -43,9 +43,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import com.deiby.visordocs.R
-import com.deiby.visordocs.ui.components.LoadingView
-import com.deiby.visordocs.ui.components.MessageView
+import com.visordocs.R
+import com.visordocs.ui.common.LoadingView
+import com.visordocs.ui.common.MessageView
 
 private const val MIN_SCALE = 1f
 private const val MAX_SCALE = 5f

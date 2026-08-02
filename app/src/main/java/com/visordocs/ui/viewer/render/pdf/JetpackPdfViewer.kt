@@ -1,4 +1,4 @@
-package com.deiby.visordocs.viewer.pdf
+package com.visordocs.ui.viewer.render.pdf
 
 import android.net.Uri
 import androidx.compose.runtime.Composable

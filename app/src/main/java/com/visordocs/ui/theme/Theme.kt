@@ -1,4 +1,4 @@
-package com.deiby.visordocs.ui.theme
+package com.visordocs.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
