@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <!--
       Sin permisos de almacenamiento a proposito.
@@ -7,8 +8,15 @@
       sistema (SAF), asi que no hace falta READ_EXTERNAL_STORAGE ni MANAGE_EXTERNAL_STORAGE.
     -->
 
+    <!--
+      Copia de seguridad desactivada. La app no guarda datos propios, asi que no hay
+      nada que respaldar; lo unico que llega a disco son copias temporales de PDF en la
+      cache, y un visor de documentos no deberia enviar eso a ningun sitio. Dejarlo
+      activado sin reglas seria confiar en el comportamiento por omision.
+    -->
     <application
-        android:allowBackup="true"
+        android:allowBackup="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -28,7 +36,11 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- A) "Abrir con" para archivos declarados correctamente como PDF. -->
+            <!--
+              A) Archivos declarados como PDF.
+              Ademas del MIME oficial se aceptan los alias historicos: algunos
+              servidores y clientes de correo todavia envian estos.
+            -->
             <intent-filter android:label="@string/open_with_label">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -36,12 +48,84 @@
                 <data android:scheme="content" />
                 <data android:scheme="file" />
                 <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/x-pdf" />
+                <data android:mimeType="application/acrobat" />
+                <data android:mimeType="application/vnd.pdf" />
+                <data android:mimeType="text/pdf" />
+                <data android:mimeType="text/x-pdf" />
             </intent-filter>
 
             <!--
-              B) Red de seguridad: muchas apps (WhatsApp en particular) entregan los
-              archivos con MIME generico. Aqui se filtra por la extension del path.
-              Los dos pathPattern cubren nombres con y sin puntos intermedios.
+              A2) Los demas formatos que la app sabe abrir: Office moderno, texto
+              plano, CSV e imagenes. Los binarios antiguos (.doc, .xls, .ppt) se
+              dejan fuera a proposito: no se pueden mostrar, asi que ofrecerse para
+              ellos solo ensuciaria el menu "Abrir con".
+            -->
+            <intent-filter android:label="@string/open_with_label">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.presentationml.presentation" />
+                <!--
+                  Los formatos con macros van declarados DOS veces, y no es un descuido.
+
+                  El nombre oficial de estos MIME lleva "macroEnabled" con E mayuscula,
+                  pero el emparejamiento en Android es sensible a mayusculas y el sistema
+                  NO normaliza el tipo que envia la app emisora: compara literalmente.
+                  Comprobado en el emulador, declarar solo una de las dos grafias deja
+                  fuera a la mitad de los emisores.
+
+                  Lint marca la version con mayusculas como error porque la norma general
+                  es escribirlos en minusculas; aqui es deliberado, de ahi el tools:ignore.
+                -->
+                <data android:mimeType="application/vnd.ms-word.document.macroenabled.12" />
+                <data android:mimeType="application/vnd.ms-excel.sheet.macroenabled.12" />
+                <data android:mimeType="application/vnd.ms-powerpoint.presentation.macroenabled.12" />
+                <data
+                    android:mimeType="application/vnd.ms-word.document.macroEnabled.12"
+                    tools:ignore="AppLinkUrlError" />
+                <data
+                    android:mimeType="application/vnd.ms-excel.sheet.macroEnabled.12"
+                    tools:ignore="AppLinkUrlError" />
+                <data
+                    android:mimeType="application/vnd.ms-powerpoint.presentation.macroEnabled.12"
+                    tools:ignore="AppLinkUrlError" />
+                <data android:mimeType="application/vnd.oasis.opendocument.text" />
+                <data android:mimeType="application/vnd.oasis.opendocument.spreadsheet" />
+                <data android:mimeType="application/vnd.oasis.opendocument.presentation" />
+                <data android:mimeType="application/rtf" />
+                <data android:mimeType="text/rtf" />
+                <data android:mimeType="application/epub+zip" />
+                <data android:mimeType="text/html" />
+                <data android:mimeType="application/xhtml+xml" />
+                <data android:mimeType="text/plain" />
+                <data android:mimeType="text/csv" />
+                <data android:mimeType="text/comma-separated-values" />
+                <data android:mimeType="text/markdown" />
+                <data android:mimeType="application/json" />
+                <data android:mimeType="application/xml" />
+                <data android:mimeType="text/xml" />
+                <data android:mimeType="image/jpeg" />
+                <data android:mimeType="image/png" />
+                <data android:mimeType="image/webp" />
+                <data android:mimeType="image/gif" />
+                <data android:mimeType="image/bmp" />
+                <data android:mimeType="image/heic" />
+                <data android:mimeType="image/heif" />
+                <data android:mimeType="image/avif" />
+                <data android:mimeType="image/svg+xml" />
+            </intent-filter>
+
+            <!--
+              B) MIME generico, pero el nombre del archivo si termina en .pdf.
+              Los pathPattern van encadenados porque el comodin `.*` de Android no
+              cruza puntos: hace falta una variante por cada punto intermedio del
+              nombre (ej. "informe.final.v2.pdf"). Y son sensibles a mayusculas,
+              de ahi las variantes .PDF.
             -->
             <intent-filter android:label="@string/open_with_label">
                 <action android:name="android.intent.action.VIEW" />
@@ -51,16 +135,76 @@
                 <data android:scheme="file" />
                 <data android:host="*" />
                 <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/unknown" />
+                <data android:mimeType="application/force-download" />
+                <data android:mimeType="binary/octet-stream" />
+                <data android:pathPattern=".*\\.pdf" />
+                <data android:pathPattern=".*\\..*\\.pdf" />
+                <data android:pathPattern=".*\\..*\\..*\\.pdf" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.pdf" />
+                <data android:pathPattern=".*\\.PDF" />
+                <data android:pathPattern=".*\\..*\\.PDF" />
+                <data android:pathPattern=".*\\..*\\..*\\.PDF" />
+                <data android:pathPattern=".*\\.docx" />
+                <data android:pathPattern=".*\\..*\\.docx" />
+                <data android:pathPattern=".*\\.xlsx" />
+                <data android:pathPattern=".*\\..*\\.xlsx" />
+                <data android:pathPattern=".*\\.pptx" />
+                <data android:pathPattern=".*\\..*\\.pptx" />
+                <data android:pathPattern=".*\\.txt" />
+                <data android:pathPattern=".*\\.csv" />
+                <data android:pathPattern=".*\\.md" />
+            </intent-filter>
+
+            <!--
+              C) file:// sin MIME alguno. Algunos gestores de archivos antiguos
+              lanzan el intent con `type` a null.
+            -->
+            <intent-filter android:label="@string/open_with_label">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="file" />
+                <data android:host="*" />
                 <data android:pathPattern=".*\\.pdf" />
                 <data android:pathPattern=".*\\..*\\.pdf" />
                 <data android:pathPattern=".*\\.PDF" />
             </intent-filter>
 
-            <!-- C) Menu "Compartir" de otras apps. -->
+            <!--
+              D) Red de seguridad para WhatsApp y similares.
+
+              WhatsApp entrega los documentos con un content:// opaco, del estilo
+              content://com.whatsapp.provider.media/item/1234, donde NO aparece el
+              nombre del archivo. Sin nombre en la ruta los pathPattern del bloque B
+              no pueden coincidir, asi que la unica forma de aparecer en "Abrir con"
+              es aceptar el MIME generico sin mirar la ruta.
+
+              Contrapartida: VisorDocs tambien se ofrecera para otros binarios
+              desconocidos (.zip, .bin, .dat). No es grave, porque DocumentTypeDetector
+              mira los primeros bytes y muestra "Formato no reconocido" en vez de
+              fallar. Si prefieres una lista mas limpia en "Abrir con", borra este
+              bloque entero: seguiras abriendo PDF desde WhatsApp siempre que la app
+              emisora incluya el nombre del archivo o el MIME correcto.
+            -->
+            <intent-filter android:label="@string/open_with_label">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="content" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/unknown" />
+                <data android:mimeType="application/force-download" />
+                <data android:mimeType="binary/octet-stream" />
+            </intent-filter>
+
+            <!-- E) Menu "Compartir" de otras apps. -->
             <intent-filter android:label="@string/open_with_label">
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/x-pdf" />
+                <data android:mimeType="application/octet-stream" />
             </intent-filter>
 
         </activity>

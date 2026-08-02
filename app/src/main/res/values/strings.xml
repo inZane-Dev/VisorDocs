@@ -16,13 +16,52 @@
     <string name="loading_document">Abriendo el documento…</string>
     <string name="page_number">Página %1$d</string>
 
+    <!-- Nombres de formato. Aparecen bajo el título en la barra superior. -->
+    <string name="format_pdf">PDF</string>
+    <string name="format_word">Documento de Word</string>
+    <string name="format_word_legacy">Documento de Word (formato antiguo)</string>
+    <string name="format_excel">Hoja de cálculo de Excel</string>
+    <string name="format_excel_legacy">Hoja de cálculo de Excel (formato antiguo)</string>
+    <string name="format_powerpoint">Presentación de PowerPoint</string>
+    <string name="format_powerpoint_legacy">Presentación de PowerPoint (formato antiguo)</string>
+    <string name="format_odt">Documento de LibreOffice</string>
+    <string name="format_ods">Hoja de cálculo de LibreOffice</string>
+    <string name="format_odp">Presentación de LibreOffice</string>
+    <string name="format_rtf">Documento RTF</string>
+    <string name="format_epub">Libro EPUB</string>
+    <string name="format_html">Página web</string>
+    <string name="format_plain_text">Archivo de texto</string>
+    <string name="format_csv">Archivo CSV</string>
+    <string name="format_image">Imagen</string>
+    <string name="format_svg">Imagen vectorial SVG</string>
+    <string name="format_unknown">Formato desconocido</string>
+
+    <!-- Textos que se insertan dentro del documento convertido. -->
+    <string name="office_sheet">Hoja</string>
+    <string name="office_slide">Diapositiva</string>
+    <string name="office_truncated">El documento es muy largo: se muestra solo la primera parte.</string>
+    <string name="office_empty">Este documento no tiene contenido que mostrar.</string>
+    <string name="empty_document_title">Documento vacío</string>
+
+    <!-- Unir PDF -->
+    <string name="merge_add">Añadir otro PDF</string>
+    <string name="merge_save">Guardar el PDF unido</string>
+    <string name="merge_discard">Quitar</string>
+    <plurals name="merge_pending">
+        <item quantity="one">Se unirá %1$d documento</item>
+        <item quantity="other">Se unirán %1$d documentos</item>
+    </plurals>
+    <string name="merge_in_progress">Uniendo los documentos…</string>
+    <string name="merge_saved">PDF unido y guardado</string>
+    <string name="merge_failed">No se pudo unir los documentos</string>
+
     <!-- Errores y formatos -->
     <string name="error_open_title">No se pudo abrir el documento</string>
     <string name="error_open_body">El archivo puede estar dañado o incompleto. Intenta descargarlo de nuevo.</string>
     <string name="error_password_title">Documento protegido</string>
     <string name="error_password_legacy_body">Este PDF pide contraseña y el motor disponible en tu dispositivo no admite contraseñas.</string>
     <string name="unsupported_format_title">%1$s: aún no disponible</string>
-    <string name="unsupported_format_body">Esta versión abre solamente archivos PDF. El soporte para documentos de Office llegará en una actualización.</string>
+    <string name="unsupported_format_body">Este es un formato binario antiguo de Office. Ábrelo una vez con Word, Excel o PowerPoint y guárdalo como .docx, .xlsx o .pptx.</string>
     <string name="unknown_format_title">Formato no reconocido</string>
     <string name="unknown_format_body">No se pudo identificar el tipo de archivo. Comprueba que sea un documento válido.</string>
 </resources>

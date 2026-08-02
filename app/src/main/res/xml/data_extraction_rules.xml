@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Nada de esta app sale del dispositivo.
+
+  `allowBackup="false"` ya lo impide en Android 11 y anteriores, pero desde Android 12
+  ese atributo esta obsoleto y quien manda es este archivo. Sin el, el comportamiento en
+  las versiones nuevas dependeria de valores por omision en lugar de una decision.
+
+  `<exclude domain="root" />` cubre todo el almacenamiento privado de la app, incluidas
+  las copias temporales de PDF que el motor de respaldo escribe en cache: un visor de
+  documentos no deberia mandar eso ni a la nube ni a otro telefono.
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="root" />
+    </cloud-backup>
+    <device-transfer>
+        <exclude domain="root" />
+    </device-transfer>
+</data-extraction-rules>
