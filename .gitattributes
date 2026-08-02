@@ -1,0 +1,20 @@
+# Normaliza los finales de linea para que el repositorio no dependa del sistema
+# operativo de quien haga el commit.
+* text=auto
+
+# gradlew es un script de shell: con finales de linea de Windows (CRLF) el
+# interprete no lo arranca. Se fuerza LF siempre, aunque se clone en Windows.
+gradlew text eol=lf
+*.sh text eol=lf
+
+# El .bat es lo contrario: lo ejecuta el interprete de Windows y necesita CRLF.
+gradlew.bat text eol=crlf
+*.bat text eol=crlf
+
+# Binarios: que git no intente tocarles nada.
+*.jar binary
+*.png binary
+*.jpg binary
+*.webp binary
+*.pdf binary
+*.keystore binary
