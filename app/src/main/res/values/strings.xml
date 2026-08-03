@@ -74,6 +74,12 @@
     <string name="merge_in_progress">Merging the documents…</string>
     <string name="merge_saved">PDF merged and saved</string>
     <string name="merge_failed">The documents could not be merged</string>
+    <string name="merge_failed_protected">One of the PDFs is password protected and cannot be merged</string>
+
+    <!-- Sharing and opening elsewhere -->
+    <string name="share_document">Share</string>
+    <string name="open_with">Open with</string>
+    <string name="open_action">Open</string>
 
     <!-- Errors and formats -->
     <string name="error_open_title">The document could not be opened</string>

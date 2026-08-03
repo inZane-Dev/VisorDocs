@@ -12,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -74,14 +75,25 @@ fun ViewerScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val savedMessage = stringResource(R.string.merge_saved)
     val failedMessage = stringResource(R.string.merge_failed)
+    val protectedMessage = stringResource(R.string.merge_failed_protected)
+    val openAction = stringResource(R.string.open_action)
 
     // El resultado de la union se cuenta una sola vez y se descarta, para que no vuelva
     // a aparecer al girar la pantalla.
     LaunchedEffect(state.merge.outcome) {
-        when (state.merge.outcome) {
-            MergeOutcome.Saved -> snackbarHostState.showMessageOnce(savedMessage)
-            MergeOutcome.Failed -> snackbarHostState.showMessageOnce(failedMessage)
+        when (val outcome = state.merge.outcome) {
             null -> return@LaunchedEffect
+
+            // Guardar y no poder ver el resultado dejaba a la persona buscando el archivo
+            // a mano. El aviso lleva ahora la accion de abrirlo.
+            is MergeOutcome.Saved -> {
+                val pressed = snackbarHostState.showMessageOnce(savedMessage, openAction)
+                if (pressed) DocumentSharing.openWith(context, outcome.target)
+            }
+
+            is MergeOutcome.Failed -> snackbarHostState.showMessageOnce(
+                if (outcome.protectedDocument) protectedMessage else failedMessage,
+            )
         }
         viewModel.consumeMergeOutcome()
     }
@@ -98,6 +110,22 @@ fun ViewerScreen(
                 source = state.source,
                 onBack = onBack,
                 actions = {
+                    // Compartir vale para cualquier formato: se pasa el mismo URI que ya
+                    // se recibio, sin copiar nada.
+                    val source = state.source
+                    if (source != null && DocumentSharing.canShare(source.uri)) {
+                        IconButton(
+                            onClick = {
+                                DocumentSharing.share(context, source.uri, source.displayName)
+                            },
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_share),
+                                contentDescription = stringResource(R.string.share_document),
+                            )
+                        }
+                    }
+
                     if (isPdf) {
                         PdfMergeActions(
                             merge = state.merge,
@@ -137,10 +165,17 @@ fun ViewerScreen(
     }
 }
 
-/** Muestra el aviso descartando el anterior, para no encadenar mensajes viejos. */
-private suspend fun SnackbarHostState.showMessageOnce(message: String) {
+/**
+ * Muestra el aviso descartando el anterior, para no encadenar mensajes viejos.
+ *
+ * Devuelve si se pulso la accion.
+ */
+private suspend fun SnackbarHostState.showMessageOnce(
+    message: String,
+    actionLabel: String? = null,
+): Boolean {
     currentSnackbarData?.dismiss()
-    showSnackbar(message)
+    return showSnackbar(message, actionLabel) == SnackbarResult.ActionPerformed
 }
 
 /**
@@ -152,6 +187,11 @@ private suspend fun SnackbarHostState.showMessageOnce(message: String) {
 private fun mergedNameFor(displayName: String?, suffix: String): String {
     val base = displayName?.substringBeforeLast('.')?.takeIf { it.isNotBlank() }
         ?: return "$suffix.pdf"
+
+    // Unir dos veces seguidas producia "informe-unido-unido.pdf". Si el nombre ya acaba
+    // en el sufijo, no se vuelve a anadir.
+    if (base.endsWith("-$suffix", ignoreCase = true)) return "$base.pdf"
+
     return "$base-$suffix.pdf"
 }
 

@@ -72,6 +72,12 @@
     <string name="merge_in_progress">Uniendo los documentos…</string>
     <string name="merge_saved">PDF unido y guardado</string>
     <string name="merge_failed">No se pudo unir los documentos</string>
+    <string name="merge_failed_protected">Uno de los PDF está protegido con contraseña y no se puede unir</string>
+
+    <!-- Compartir y abrir en otra app -->
+    <string name="share_document">Compartir</string>
+    <string name="open_with">Abrir con</string>
+    <string name="open_action">Abrir</string>
 
     <!-- Errores y formatos -->
     <string name="error_open_title">No se pudo abrir el documento</string>

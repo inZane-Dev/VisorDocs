@@ -2,10 +2,21 @@ package com.visordocs.data.pdf
 
 import com.tom_roush.pdfbox.io.MemoryUsageSetting
 import com.tom_roush.pdfbox.multipdf.PDFMergerUtility
+import com.tom_roush.pdfbox.pdmodel.encryption.InvalidPasswordException
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.io.OutputStream
+
+/**
+ * Alguno de los documentos esta cifrado y pide contrasena.
+ *
+ * Se traduce aqui, en la capa de datos, para que la interfaz pueda dar un mensaje
+ * concreto sin conocer PDFBox: sin esto, un PDF protegido daba el mismo "no se pudo unir"
+ * que un archivo corrupto, y la persona no tenia forma de saber que el problema era otro
+ * ni que podia resolverlo.
+ */
+class ProtectedPdfException(cause: Throwable) : IOException(cause)
 
 /**
  * Une varios PDF en uno solo.
@@ -44,6 +55,10 @@ object PdfMerger {
         sources.forEach { merger.addSource(it) }
 
         val memory = MemoryUsageSetting.setupMixed(MAX_MEMORY_BYTES).setTempDir(tempDir)
-        merger.mergeDocuments(memory)
+        try {
+            merger.mergeDocuments(memory)
+        } catch (password: InvalidPasswordException) {
+            throw ProtectedPdfException(password)
+        }
     }
 }

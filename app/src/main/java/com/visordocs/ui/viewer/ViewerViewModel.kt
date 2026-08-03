@@ -10,6 +10,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.visordocs.data.DocumentRepository
 import com.visordocs.data.markup.MarkupLabels
+import com.visordocs.data.pdf.ProtectedPdfException
 import com.visordocs.model.DocumentContent
 import com.visordocs.model.DocumentRequest
 import com.visordocs.model.DocumentSource
@@ -60,8 +61,15 @@ data class MergeState(
 }
 
 sealed interface MergeOutcome {
-    data object Saved : MergeOutcome
-    data object Failed : MergeOutcome
+    /** [target] es donde quedo el archivo, para poder ofrecer abrirlo sin buscarlo. */
+    data class Saved(val target: Uri) : MergeOutcome
+
+    /**
+     * [protectedDocument] distingue el PDF con contrasena del resto de fallos. Es el
+     * unico caso en que la persona puede hacer algo al respecto, asi que merece un
+     * mensaje propio en lugar del generico.
+     */
+    data class Failed(val protectedDocument: Boolean) : MergeOutcome
 }
 
 /**
@@ -205,16 +213,21 @@ class ViewerViewModel(private val repository: DocumentRepository) : ViewModel() 
             // Se registra la causa. No lleva nada del usuario —solo el tipo de fallo—,
             // asi que puede quedarse tambien en las versiones publicadas: sin esto, un
             // fallo al unir no deja ningun rastro que permita entender que paso.
-            result.exceptionOrNull()?.let { error ->
-                Log.w(PdfEngineSupport.TAG, "No se pudo unir los PDF", error)
-            }
+            val error = result.exceptionOrNull()
+            error?.let { Log.w(PdfEngineSupport.TAG, "No se pudo unir los PDF", it) }
+
             _uiState.update {
                 it.copy(
-                    merge = if (result.isSuccess) {
+                    merge = if (error == null) {
                         // Tras guardar, la cola se vacia: el trabajo ya esta hecho.
-                        MergeState(outcome = MergeOutcome.Saved)
+                        MergeState(outcome = MergeOutcome.Saved(target))
                     } else {
-                        it.merge.copy(inProgress = false, outcome = MergeOutcome.Failed)
+                        it.merge.copy(
+                            inProgress = false,
+                            outcome = MergeOutcome.Failed(
+                                protectedDocument = error is ProtectedPdfException,
+                            ),
+                        )
                     },
                 )
             }

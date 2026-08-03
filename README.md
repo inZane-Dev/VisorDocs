@@ -28,6 +28,10 @@ permisos de almacenamiento**.
 
 Disponible en **español e inglés**, según el idioma del teléfono.
 
+Cualquier documento abierto se puede **compartir** con otra app desde la barra superior.
+El selector del sistema incluye *Imprimir*, así que imprimir tampoco necesita nada dentro
+de la app.
+
 ---
 
 ## 1. Preparar el entorno (una sola vez)
@@ -116,6 +120,8 @@ app/src/main/java/com/visordocs/
     └── viewer/
         ├── ViewerViewModel.kt      Estado de la pantalla: una sola máquina de estados
         ├── ViewerScreen.kt         Elige el renderizador según la forma del contenido
+        ├── PdfMergeBar.kt          Cola de unión: lista, reordenar, quitar
+        ├── DocumentSharing.kt      Enviar el documento a otra app
         └── render/                 Solo pintan lo que reciben; no cargan nada
             ├── HtmlDocument.kt     Envoltorio HTML + colores del tema
             ├── MarkupViewer.kt     WebView aislado (sin JS, sin red, sin navegación)
@@ -278,7 +284,7 @@ conversión, en vez de dar un error genérico.
 
 ```
 gradlew.bat testDebugUnitTest          # 71 pruebas en la JVM, segundos
-gradlew.bat connectedDebugAndroidTest  # 79 pruebas en dispositivo
+gradlew.bat connectedDebugAndroidTest  # 91 pruebas en dispositivo
 gradlew.bat lintDebug                  # sin avisos nuevos
 ```
 
@@ -365,7 +371,6 @@ gradlew.bat assembleRelease
   vez. No es un añadido menor: `retainAccess` está escrito a propósito para conservar
   **un solo** permiso persistente, y unos recientes de verdad obligarían a rehacerlo
   respetando el límite que impone el sistema.
-- **Sin imprimir ni compartir** el documento abierto.
 - **Buscar texto solo en PDF** con el motor de Jetpack. Los formatos que pasan por el
   WebView no tienen búsqueda, aunque `findAllAsync` estaría disponible.
 
