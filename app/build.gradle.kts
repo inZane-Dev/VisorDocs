@@ -109,6 +109,19 @@ android {
         disable += "AndroidGradlePluginVersion"
 
         /*
+         * OldTargetApi avisa de que `targetSdk` no apunta a la version mas reciente de
+         * Android. Se descarta porque su resultado depende de QUE SDK tenga instalada la
+         * maquina que compila: en este equipo no salta y en el ejecutor de integracion
+         * continua si, con el mismo codigo. Un aviso que aparece o no segun el ordenador
+         * no puede detener la compilacion.
+         *
+         * Subir `targetSdk` no es cambiar un numero: altera comportamientos del sistema
+         * que la app hereda, y toca hacerlo a proposito y probandolo, no porque el
+         * ejecutor tenga una plataforma mas nueva descargada.
+         */
+        disable += "OldTargetApi"
+
+        /*
          * TrustAllX509TrustManager: tres avisos dentro de BouncyCastle, que PDFBox
          * arrastra para poder abrir PDF cifrados. Contiene un gestor de certificados TLS
          * vacio, el patron clasico de "aceptar cualquier certificado".
