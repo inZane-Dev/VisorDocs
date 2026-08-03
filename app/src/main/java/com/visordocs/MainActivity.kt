@@ -70,6 +70,14 @@ class MainActivity : FragmentActivity() {
 }
 
 private fun Intent.toDocumentRequest(): DocumentRequest? {
+    // Compartir VARIOS documentos a la vez: se abre el primero y los demas se dejan
+    // preparados para unir, que es lo unico que se puede hacer con un grupo de PDF.
+    if (action == Intent.ACTION_SEND_MULTIPLE) {
+        val uris = extraStreamUris()
+        val first = uris.firstOrNull() ?: return null
+        return DocumentRequest(uri = first, mimeType = type, alsoMerge = uris.drop(1))
+    }
+
     val uri = when (action) {
         Intent.ACTION_VIEW -> data
         Intent.ACTION_SEND -> extraStreamUri()
@@ -105,3 +113,11 @@ private fun Intent.extraStreamUri(): Uri? =
     } else {
         getParcelableExtra(Intent.EXTRA_STREAM) as? Uri
     }
+
+@Suppress("DEPRECATION")
+private fun Intent.extraStreamUris(): List<Uri> =
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+        getParcelableArrayListExtra(Intent.EXTRA_STREAM, Uri::class.java)
+    } else {
+        getParcelableArrayListExtra(Intent.EXTRA_STREAM)
+    }.orEmpty()

@@ -198,9 +198,17 @@
                 <data android:mimeType="binary/octet-stream" />
             </intent-filter>
 
-            <!-- E) Menu "Compartir" de otras apps. -->
+            <!--
+              E) Menu "Compartir" de otras apps.
+
+              SEND_MULTIPLE va junto a SEND porque comparten los mismos tipos. Es lo que
+              permite seleccionar varios PDF en Archivos o en Drive y mandarlos aqui de
+              una vez: se abre el primero y el resto queda encolado para unirlos, que es
+              lo unico que se puede hacer con un grupo de documentos.
+            -->
             <intent-filter android:label="@string/open_with_label">
                 <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="application/pdf" />
                 <data android:mimeType="application/x-pdf" />
