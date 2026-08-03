@@ -1,0 +1,71 @@
+name: CI
+
+# Se ejecuta en cada empujon a main y en cada propuesta de cambio hacia main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  # Permite lanzarlo a mano desde la pestana Actions.
+  workflow_dispatch:
+
+# Si llegan dos empujones seguidos, se cancela el analisis del primero: solo
+# interesa saber si el ultimo estado del codigo esta sano.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    name: Pruebas y lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Descargar el codigo
+        uses: actions/checkout@v4
+
+      - name: Preparar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Preparar Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Preparar el SDK de Android
+        uses: android-actions/setup-android@v3
+
+      # androidx.pdf exige compilar contra la extension 19, que NO viene en la
+      # imagen del ejecutor: trae la API 36 con la extension 18. Sin este paso la
+      # compilacion falla con "compileSdkExtension 19 not found".
+      - name: Instalar la SDK Extension 19
+        run: sdkmanager --install "platforms;android-36-ext19"
+
+      # Las 71 pruebas que no necesitan un dispositivo. Las 58 instrumentadas se
+      # quedan fuera a proposito: exigen arrancar un emulador, que multiplica por
+      # varios el tiempo de cada ejecucion. Se lanzan a mano antes de publicar.
+      - name: Pruebas en la JVM
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      # Lint esta configurado para detener la compilacion ante cualquier aviso
+      # nuevo (warningsAsErrors), asi que este paso es una puerta de verdad.
+      - name: Lint
+        run: ./gradlew lintDebug --no-daemon
+
+      # Compilar de verdad: detecta lo que ni las pruebas ni lint ven, como que
+      # falte un recurso o que R8 se atragante con las reglas de PDFBox.
+      - name: Compilar
+        run: ./gradlew assembleDebug --no-daemon
+
+      # Sin esto, un fallo en el ejecutor solo deja un mensaje suelto en el log.
+      - name: Guardar informes si algo falla
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informes
+          path: |
+            app/build/reports/
+            app/build/test-results/
+          retention-days: 7
