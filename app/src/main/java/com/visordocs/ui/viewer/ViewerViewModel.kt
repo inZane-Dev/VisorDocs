@@ -41,6 +41,9 @@ sealed interface ContentState {
     data class Ready(val content: DocumentContent) : ContentState
 }
 
+/** Un documento en la cola de union, con su nombre para poder mostrarlo. */
+data class MergeDocument(val uri: Uri, val displayName: String)
+
 /**
  * Union de PDF: documentos que se anadiran al que esta abierto.
  *
@@ -48,7 +51,7 @@ sealed interface ContentState {
  * solo los que se le suman.
  */
 data class MergeState(
-    val pending: List<Uri> = emptyList(),
+    val pending: List<MergeDocument> = emptyList(),
     val inProgress: Boolean = false,
     val outcome: MergeOutcome? = null,
 ) {
@@ -86,6 +89,10 @@ class ViewerViewModel(private val repository: DocumentRepository) : ViewModel() 
         loadJob?.cancel()
         _uiState.value = ViewerUiState(request = request)
 
+        // Si llegaron varios documentos compartidos a la vez, el resto entra en la cola
+        // de union. Va antes de cargar para que la lista aparezca de inmediato.
+        if (request.alsoMerge.isNotEmpty()) addToMerge(request.alsoMerge)
+
         loadJob = viewModelScope.launch {
             // Antes de nada se intenta conservar el acceso, para que el documento se
             // pueda reabrir si el sistema mata el proceso mientras esta en segundo plano.
@@ -108,13 +115,60 @@ class ViewerViewModel(private val repository: DocumentRepository) : ViewModel() 
 
     // ------------------------------------------------------------ union de PDF
 
-    /** Anade documentos a la cola de union. Se ignoran los repetidos. */
+    /**
+     * Anade documentos a la cola de union. Se ignoran los repetidos y el ya abierto.
+     *
+     * El nombre se resuelve aqui, una sola vez, y no cada vez que se pinta la lista:
+     * consultarlo implica preguntar al proveedor, que es trabajo de disco.
+     */
     fun addToMerge(uris: List<Uri>) {
         if (uris.isEmpty()) return
+
+        viewModelScope.launch {
+            val yaEnCola = _uiState.value.merge.pending.map { it.uri }.toSet()
+            val abierto = _uiState.value.source?.uri
+            val nuevos = uris
+                .filter { it != abierto && it !in yaEnCola }
+                .distinct()
+                .map { MergeDocument(uri = it, displayName = repository.displayName(it)) }
+
+            if (nuevos.isEmpty()) return@launch
+
+            // Se vuelve a filtrar contra el estado ACTUAL y no contra el que se leyo al
+            // entrar: resolver los nombres es suspend, y en ese hueco puede haber
+            // llegado otra tanda de documentos.
+            _uiState.update { state ->
+                val presentes = state.merge.pending.map { it.uri }.toSet()
+                val añadir = nuevos.filter { it.uri !in presentes && it.uri != state.source?.uri }
+                state.copy(merge = state.merge.copy(pending = state.merge.pending + añadir))
+            }
+        }
+    }
+
+    /** Quita un solo documento de la cola, sin tocar los demas. */
+    fun removeFromMerge(uri: Uri) {
         _uiState.update { state ->
-            val abierto = state.source?.uri
-            val nuevos = uris.filter { it != abierto && it !in state.merge.pending }
-            state.copy(merge = state.merge.copy(pending = state.merge.pending + nuevos))
+            state.copy(
+                merge = state.merge.copy(pending = state.merge.pending.filterNot { it.uri == uri }),
+            )
+        }
+    }
+
+    /**
+     * Mueve un documento una posicion, para corregir el orden sin rehacer la seleccion.
+     *
+     * [offset] es -1 para subir y +1 para bajar. Fuera de rango no hace nada, que es lo
+     * que corresponde en el primero y el ultimo.
+     */
+    fun moveInMerge(uri: Uri, offset: Int) {
+        _uiState.update { state ->
+            val actual = state.merge.pending
+            val desde = actual.indexOfFirst { it.uri == uri }
+            val hasta = desde + offset
+            if (desde < 0 || hasta !in actual.indices) return@update state
+
+            val reordenados = actual.toMutableList().apply { add(hasta, removeAt(desde)) }
+            state.copy(merge = state.merge.copy(pending = reordenados))
         }
     }
 
@@ -135,7 +189,7 @@ class ViewerViewModel(private val repository: DocumentRepository) : ViewModel() 
 
         viewModelScope.launch {
             val result = runCatching {
-                repository.mergePdfs(listOf(first) + state.merge.pending, target)
+                repository.mergePdfs(listOf(first) + state.merge.pending.map { it.uri }, target)
             }
 
             // Se registra la causa. No lleva nada del usuario —solo el tipo de fallo—,

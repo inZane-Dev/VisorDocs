@@ -46,7 +46,11 @@
     <!-- Unir PDF -->
     <string name="merge_add">Añadir otro PDF</string>
     <string name="merge_save">Guardar el PDF unido</string>
-    <string name="merge_discard">Quitar</string>
+    <string name="merge_discard_all">Vaciar</string>
+    <string name="merge_remove_one">Quitar de la unión</string>
+    <string name="merge_move_up">Subir</string>
+    <string name="merge_move_down">Bajar</string>
+    <string name="merge_open_document">Documento abierto</string>
     <plurals name="merge_pending">
         <item quantity="one">Se unirá %1$d documento</item>
         <item quantity="other">Se unirán %1$d documentos</item>

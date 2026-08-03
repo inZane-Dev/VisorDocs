@@ -114,9 +114,18 @@ fun ViewerScreen(
                 .padding(innerPadding),
         ) {
             if (isPdf) {
-                PdfMergeBanner(merge = state.merge, onClear = viewModel::clearMerge)
+                PdfMergePanel(
+                    merge = state.merge,
+                    openDocumentName = state.source?.displayName.orEmpty(),
+                    onRemove = viewModel::removeFromMerge,
+                    onMove = viewModel::moveInMerge,
+                    onClear = viewModel::clearMerge,
+                )
             }
-            Box(modifier = Modifier.fillMaxSize()) {
+            // `weight(1f)` y no `fillMaxSize()`: el documento ocupa lo que sobra despues
+            // del panel de union. Con fillMaxSize pediria la altura entera de la columna
+            // y el panel lo empujaria fuera de la pantalla al crecer la lista.
+            Box(modifier = Modifier.weight(1f)) {
                 ViewerContent(state)
             }
         }

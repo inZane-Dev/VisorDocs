@@ -82,43 +82,21 @@ class DocumentRepository(
         }
     }
 
+    /**
+     * Solo el nombre visible, sin abrir el archivo ni mirar su contenido.
+     *
+     * Lo usa la cola de union para poder listar lo que se va a unir. Identificar el
+     * formato de cada documento ahi seria trabajo tirado: ya se sabe que son PDF porque
+     * el selector solo ofrecio PDF.
+     */
+    suspend fun displayName(uri: Uri): String = withContext(dispatcher) {
+        queryNameAndSize(uri).first ?: uri.lastPathSegment ?: FALLBACK_NAME
+    }
+
     /** Averigua nombre, tamano y formato. Nunca falla: en el peor caso, tipo desconocido. */
     suspend fun resolve(uri: Uri, mimeHint: String?): DocumentSource = withContext(dispatcher) {
-        var displayName: String? = null
-        var sizeBytes: Long? = null
-
-        // Los content:// exponen nombre y tamano via OpenableColumns.
-        runCatching {
-            resolver.query(
-                uri,
-                arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE),
-                null,
-                null,
-                null,
-            )?.use { cursor ->
-                if (cursor.moveToFirst()) {
-                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-                    if (nameIndex >= 0 && !cursor.isNull(nameIndex)) {
-                        displayName = cursor.getString(nameIndex)
-                    }
-                    val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-                    if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) {
-                        sizeBytes = cursor.getLong(sizeIndex)
-                    }
-                }
-            }
-        }
-
-        // Los file:// no responden a esa consulta; se lee del propio path.
-        if (displayName == null && uri.scheme == "file") {
-            uri.path?.let { path ->
-                val file = File(path)
-                displayName = file.name
-                if (file.exists()) sizeBytes = file.length()
-            }
-        }
-
-        val resolvedName = displayName ?: uri.lastPathSegment ?: "documento"
+        val (displayName, sizeBytes) = queryNameAndSize(uri)
+        val resolvedName = displayName ?: uri.lastPathSegment ?: FALLBACK_NAME
 
         DocumentSource(
             uri = uri,
@@ -222,6 +200,49 @@ class DocumentRepository(
         }
     }
 
+    /**
+     * Nombre y tamano segun el proveedor. Devuelve nulos en lugar de fallar: hay
+     * proveedores que no responden a esta consulta, y un documento sin nombre se abre
+     * igual de bien.
+     */
+    private fun queryNameAndSize(uri: Uri): Pair<String?, Long?> {
+        var displayName: String? = null
+        var sizeBytes: Long? = null
+
+        // Los content:// exponen nombre y tamano via OpenableColumns.
+        runCatching {
+            resolver.query(
+                uri,
+                arrayOf(OpenableColumns.DISPLAY_NAME, OpenableColumns.SIZE),
+                null,
+                null,
+                null,
+            )?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (nameIndex >= 0 && !cursor.isNull(nameIndex)) {
+                        displayName = cursor.getString(nameIndex)
+                    }
+                    val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                    if (sizeIndex >= 0 && !cursor.isNull(sizeIndex)) {
+                        sizeBytes = cursor.getLong(sizeIndex)
+                    }
+                }
+            }
+        }
+
+        // Los file:// no responden a esa consulta; se lee del propio path.
+        if (displayName == null && uri.scheme == "file") {
+            uri.path?.let { path ->
+                val file = File(path)
+                displayName = file.name
+                if (file.exists()) sizeBytes = file.length()
+            }
+        }
+
+        return displayName to sizeBytes
+    }
+
     private fun open(uri: Uri) =
         resolver.openInputStream(uri) ?: throw IOException("No se pudo abrir el archivo")
 
@@ -233,4 +254,9 @@ class DocumentRepository(
 
     private fun Markup.toContent(): DocumentContent =
         if (isEmpty) DocumentContent.Empty else DocumentContent.Markup(body, truncated)
+
+    private companion object {
+        /** Ultimo recurso cuando ni el proveedor ni el URI dan un nombre. */
+        const val FALLBACK_NAME = "documento"
+    }
 }
