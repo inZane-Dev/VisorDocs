@@ -26,6 +26,8 @@ son ZIP con XML, y se leen con `ZipInputStream` y `XmlPullParser` del propio sis
 Renderizado 100% en el dispositivo: ningún archivo sale del teléfono. La app **no pide
 permisos de almacenamiento**.
 
+Disponible en **español e inglés**, según el idioma del teléfono.
+
 ---
 
 ## 1. Preparar el entorno (una sola vez)
@@ -359,8 +361,6 @@ gradlew.bat assembleRelease
 ## Pendiente
 
 - Los binarios **`.doc`/`.xls`/`.ppt`** quedan fuera del alcance (ver arriba).
-- **Solo está en español.** `values/strings.xml` es el idioma por omisión, así que un
-  teléfono en inglés también lo verá en español.
 - **Sin historial de recientes.** Abrir, cerrar y volver obliga a buscar el archivo otra
   vez. No es un añadido menor: `retainAccess` está escrito a propósito para conservar
   **un solo** permiso persistente, y unos recientes de verdad obligarían a rehacerlo
@@ -384,6 +384,36 @@ excepción—. Por eso `retainAccess` suelta las anteriores cada vez: siempre ha
 
 Los URI que llegan por "Abrir con" desde mensajería no admiten permiso persistente; ahí
 el documento se abre igual, pero no sobrevivirá a la muerte del proceso.
+
+### Idiomas
+
+Español e inglés. Android elige según el idioma del teléfono, sin ningún ajuste dentro
+de la app.
+
+```
+res/values/strings.xml      inglés  ← idioma por omisión
+res/values-es/strings.xml   español
+```
+
+El **inglés** es el de la carpeta por omisión a propósito: es la que se usa cuando no hay
+traducción para el idioma del teléfono, así que un móvil en alemán o japonés verá inglés
+y no español. `values-es` cubre todas las variantes (`es-ES`, `es-MX`, `es-419`…).
+
+Ningún texto de interfaz está incrustado en el código: todo sale de `stringResource`. Los
+tres que sí lo estaban —el nombre de reserva de un documento sin nombre y el sufijo
+`-unido` del archivo propuesto al guardar— se movieron a recursos.
+
+La capa de datos sigue sin conocer los recursos de Android: los textos que se insertan
+dentro de un documento convertido (`Hoja`, `Diapositiva`) y el nombre de reserva **le
+llegan ya traducidos** desde la interfaz. Esa frontera es lo que permite probar los
+convertidores sin un dispositivo.
+
+El español necesita la forma plural `many` además de `one` y `other` —las reglas de CLDR
+le dan forma propia a los múltiplos de un millón—. Lo detectó el lint, no una revisión a
+ojo.
+
+Lo que **no** se traduce, y es correcto: el nombre de la app, y el contenido de los
+documentos (si una hoja se llama `Hoja1`, se sigue llamando así en inglés).
 
 ### Archivos sin extensión
 

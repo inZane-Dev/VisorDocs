@@ -1,71 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Idioma por omision: ingles.
+
+  Android elige la carpeta de recursos segun el idioma del telefono. Esta es la que usa
+  cuando no hay una traduccion para ese idioma, asi que conviene que sea la de mayor
+  alcance: un telefono en aleman o en japones vera ingles, no espanol.
+
+  El espanol vive en values-es/strings.xml.
+-->
 <resources>
-    <string name="app_name">VisorDocs</string>
+    <!-- El nombre propio de la app no se traduce. -->
+    <string name="app_name" translatable="false">VisorDocs</string>
 
-    <!-- Etiqueta que aparece en el menú "Abrir con" del sistema. -->
-    <string name="open_with_label">Abrir en VisorDocs</string>
+    <!-- Label shown in the system "Open with" menu. -->
+    <string name="open_with_label">Open in VisorDocs</string>
 
-    <!-- Pantalla de inicio -->
-    <string name="home_subtitle">Elige un documento para verlo, o ábrelo directamente desde WhatsApp, Gmail o Archivos.</string>
-    <string name="open_document">Abrir documento</string>
-    <string name="pdf_engine_label">Motor de PDF: %1$s</string>
+    <!-- Home screen -->
+    <string name="home_subtitle">Pick a document to view it, or open one straight from WhatsApp, Gmail or Files.</string>
+    <string name="open_document">Open document</string>
+    <string name="pdf_engine_label">PDF engine: %1$s</string>
 
-    <!-- Visor -->
-    <string name="back">Volver</string>
-    <string name="loading">Cargando…</string>
-    <string name="loading_document">Abriendo el documento…</string>
-    <string name="page_number">Página %1$d</string>
+    <!-- Viewer -->
+    <string name="back">Back</string>
+    <string name="loading">Loading…</string>
+    <string name="loading_document">Opening the document…</string>
+    <string name="page_number">Page %1$d</string>
 
-    <!-- Nombres de formato. Aparecen bajo el título en la barra superior. -->
-    <string name="format_pdf">PDF</string>
-    <string name="format_word">Documento de Word</string>
-    <string name="format_word_legacy">Documento de Word (formato antiguo)</string>
-    <string name="format_excel">Hoja de cálculo de Excel</string>
-    <string name="format_excel_legacy">Hoja de cálculo de Excel (formato antiguo)</string>
-    <string name="format_powerpoint">Presentación de PowerPoint</string>
-    <string name="format_powerpoint_legacy">Presentación de PowerPoint (formato antiguo)</string>
-    <string name="format_odt">Documento de LibreOffice</string>
-    <string name="format_ods">Hoja de cálculo de LibreOffice</string>
-    <string name="format_odp">Presentación de LibreOffice</string>
-    <string name="format_rtf">Documento RTF</string>
-    <string name="format_epub">Libro EPUB</string>
-    <string name="format_html">Página web</string>
-    <string name="format_plain_text">Archivo de texto</string>
-    <string name="format_csv">Archivo CSV</string>
-    <string name="format_image">Imagen</string>
-    <string name="format_svg">Imagen vectorial SVG</string>
-    <string name="format_unknown">Formato desconocido</string>
+    <!-- Shown when neither the provider nor the URI give the file a name. -->
+    <string name="document_fallback_name">document</string>
 
-    <!-- Textos que se insertan dentro del documento convertido. -->
-    <string name="office_sheet">Hoja</string>
-    <string name="office_slide">Diapositiva</string>
-    <string name="office_truncated">El documento es muy largo: se muestra solo la primera parte.</string>
-    <string name="office_empty">Este documento no tiene contenido que mostrar.</string>
-    <string name="empty_document_title">Documento vacío</string>
+    <!-- Format names. Shown under the title in the top bar. -->
+    <!-- "PDF" se escribe igual en todos los idiomas. -->
+    <string name="format_pdf" translatable="false">PDF</string>
+    <string name="format_word">Word document</string>
+    <string name="format_word_legacy">Word document (legacy format)</string>
+    <string name="format_excel">Excel spreadsheet</string>
+    <string name="format_excel_legacy">Excel spreadsheet (legacy format)</string>
+    <string name="format_powerpoint">PowerPoint presentation</string>
+    <string name="format_powerpoint_legacy">PowerPoint presentation (legacy format)</string>
+    <string name="format_odt">LibreOffice document</string>
+    <string name="format_ods">LibreOffice spreadsheet</string>
+    <string name="format_odp">LibreOffice presentation</string>
+    <string name="format_rtf">RTF document</string>
+    <string name="format_epub">EPUB book</string>
+    <string name="format_html">Web page</string>
+    <string name="format_plain_text">Text file</string>
+    <string name="format_csv">CSV file</string>
+    <string name="format_image">Image</string>
+    <string name="format_svg">SVG vector image</string>
+    <string name="format_unknown">Unknown format</string>
 
-    <!-- Unir PDF -->
-    <string name="merge_add">Añadir otro PDF</string>
-    <string name="merge_save">Guardar el PDF unido</string>
-    <string name="merge_discard_all">Vaciar</string>
-    <string name="merge_remove_one">Quitar de la unión</string>
-    <string name="merge_move_up">Subir</string>
-    <string name="merge_move_down">Bajar</string>
-    <string name="merge_open_document">Documento abierto</string>
+    <!-- Text inserted inside the converted document. -->
+    <string name="office_sheet">Sheet</string>
+    <string name="office_slide">Slide</string>
+    <string name="office_truncated">This document is very long: only the first part is shown.</string>
+    <string name="office_empty">This document has no content to show.</string>
+    <string name="empty_document_title">Empty document</string>
+
+    <!-- Merging PDFs -->
+    <string name="merge_add">Add another PDF</string>
+    <string name="merge_save">Save the merged PDF</string>
+    <string name="merge_discard_all">Clear</string>
+    <string name="merge_remove_one">Remove from the merge</string>
+    <string name="merge_move_up">Move up</string>
+    <string name="merge_move_down">Move down</string>
+    <string name="merge_open_document">Open document</string>
+    <!-- Appended to the file name proposed when saving: "report-merged.pdf". -->
+    <string name="merge_file_suffix">merged</string>
     <plurals name="merge_pending">
-        <item quantity="one">Se unirá %1$d documento</item>
-        <item quantity="other">Se unirán %1$d documentos</item>
+        <item quantity="one">%1$d document will be merged</item>
+        <item quantity="other">%1$d documents will be merged</item>
     </plurals>
-    <string name="merge_in_progress">Uniendo los documentos…</string>
-    <string name="merge_saved">PDF unido y guardado</string>
-    <string name="merge_failed">No se pudo unir los documentos</string>
+    <string name="merge_in_progress">Merging the documents…</string>
+    <string name="merge_saved">PDF merged and saved</string>
+    <string name="merge_failed">The documents could not be merged</string>
 
-    <!-- Errores y formatos -->
-    <string name="error_open_title">No se pudo abrir el documento</string>
-    <string name="error_open_body">El archivo puede estar dañado o incompleto. Intenta descargarlo de nuevo.</string>
-    <string name="error_password_title">Documento protegido</string>
-    <string name="error_password_legacy_body">Este PDF pide contraseña y el motor disponible en tu dispositivo no admite contraseñas.</string>
-    <string name="unsupported_format_title">%1$s: aún no disponible</string>
-    <string name="unsupported_format_body">Este es un formato binario antiguo de Office. Ábrelo una vez con Word, Excel o PowerPoint y guárdalo como .docx, .xlsx o .pptx.</string>
-    <string name="unknown_format_title">Formato no reconocido</string>
-    <string name="unknown_format_body">No se pudo identificar el tipo de archivo. Comprueba que sea un documento válido.</string>
+    <!-- Errors and formats -->
+    <string name="error_open_title">The document could not be opened</string>
+    <string name="error_open_body">The file may be damaged or incomplete. Try downloading it again.</string>
+    <string name="error_password_title">Protected document</string>
+    <string name="error_password_legacy_body">This PDF asks for a password, and the engine available on your device does not support passwords.</string>
+    <string name="unsupported_format_title">%1$s: not available yet</string>
+    <string name="unsupported_format_body">This is an old binary Office format. Open it once with Word, Excel or PowerPoint and save it as .docx, .xlsx or .pptx.</string>
+    <string name="unknown_format_title">Unrecognised format</string>
+    <string name="unknown_format_body">The file type could not be identified. Check that it is a valid document.</string>
 </resources>

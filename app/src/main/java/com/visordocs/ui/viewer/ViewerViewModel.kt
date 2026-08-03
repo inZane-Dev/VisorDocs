@@ -82,7 +82,17 @@ class ViewerViewModel(private val repository: DocumentRepository) : ViewModel() 
 
     private var loadJob: Job? = null
 
-    fun open(request: DocumentRequest, labels: MarkupLabels) {
+    /**
+     * Nombre que se muestra cuando ni el proveedor ni el URI dan uno.
+     *
+     * Llega desde la interfaz, traducido, porque la capa de datos no conoce los recursos
+     * de Android. Se guarda para que anadir documentos a la cola tambien pueda usarlo.
+     */
+    private var fallbackName: String = ""
+
+    fun open(request: DocumentRequest, labels: MarkupLabels, fallbackName: String) {
+        this.fallbackName = fallbackName
+
         // Sin esta guarda, cada recomposicion volveria a analizar el mismo archivo.
         if (_uiState.value.request == request) return
 
@@ -98,7 +108,7 @@ class ViewerViewModel(private val repository: DocumentRepository) : ViewModel() 
             // pueda reabrir si el sistema mata el proceso mientras esta en segundo plano.
             repository.retainAccess(request.uri)
 
-            val source = repository.resolve(request.uri, request.mimeType)
+            val source = repository.resolve(request.uri, request.mimeType, fallbackName)
             _uiState.update { it.copy(source = source) }
 
             val content = runCatching { repository.load(source, labels) }
@@ -130,7 +140,7 @@ class ViewerViewModel(private val repository: DocumentRepository) : ViewModel() 
             val nuevos = uris
                 .filter { it != abierto && it !in yaEnCola }
                 .distinct()
-                .map { MergeDocument(uri = it, displayName = repository.displayName(it)) }
+                .map { MergeDocument(uri = it, displayName = repository.displayName(it, fallbackName)) }
 
             if (nuevos.isEmpty()) return@launch
 

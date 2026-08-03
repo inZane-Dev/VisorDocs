@@ -89,14 +89,18 @@ class DocumentRepository(
      * formato de cada documento ahi seria trabajo tirado: ya se sabe que son PDF porque
      * el selector solo ofrecio PDF.
      */
-    suspend fun displayName(uri: Uri): String = withContext(dispatcher) {
-        queryNameAndSize(uri).first ?: uri.lastPathSegment ?: FALLBACK_NAME
+    suspend fun displayName(uri: Uri, fallbackName: String): String = withContext(dispatcher) {
+        queryNameAndSize(uri).first ?: uri.lastPathSegment ?: fallbackName
     }
 
     /** Averigua nombre, tamano y formato. Nunca falla: en el peor caso, tipo desconocido. */
-    suspend fun resolve(uri: Uri, mimeHint: String?): DocumentSource = withContext(dispatcher) {
+    suspend fun resolve(
+        uri: Uri,
+        mimeHint: String?,
+        fallbackName: String,
+    ): DocumentSource = withContext(dispatcher) {
         val (displayName, sizeBytes) = queryNameAndSize(uri)
-        val resolvedName = displayName ?: uri.lastPathSegment ?: FALLBACK_NAME
+        val resolvedName = displayName ?: uri.lastPathSegment ?: fallbackName
 
         DocumentSource(
             uri = uri,
@@ -254,9 +258,4 @@ class DocumentRepository(
 
     private fun Markup.toContent(): DocumentContent =
         if (isEmpty) DocumentContent.Empty else DocumentContent.Markup(body, truncated)
-
-    private companion object {
-        /** Ultimo recurso cuando ni el proveedor ni el URI dan un nombre. */
-        const val FALLBACK_NAME = "documento"
-    }
 }

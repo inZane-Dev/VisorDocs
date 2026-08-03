@@ -66,7 +66,9 @@ fun ViewerScreen(
         slide = stringResource(R.string.office_slide),
     )
 
-    LaunchedEffect(request) { viewModel.open(request, labels) }
+    val fallbackName = stringResource(R.string.document_fallback_name)
+
+    LaunchedEffect(request) { viewModel.open(request, labels, fallbackName) }
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     val snackbarHostState = remember { SnackbarHostState() }
@@ -101,7 +103,10 @@ fun ViewerScreen(
                             merge = state.merge,
                             onAdd = viewModel::addToMerge,
                             onSave = viewModel::mergeInto,
-                            suggestedName = mergedNameFor(state.source?.displayName),
+                            suggestedName = mergedNameFor(
+                                displayName = state.source?.displayName,
+                                suffix = stringResource(R.string.merge_file_suffix),
+                            ),
                         )
                     }
                 },
@@ -138,11 +143,16 @@ private suspend fun SnackbarHostState.showMessageOnce(message: String) {
     showSnackbar(message)
 }
 
-/** Propone "informe-unido.pdf" a partir de "informe.pdf". */
-private fun mergedNameFor(displayName: String?): String {
+/**
+ * Propone "informe-unido.pdf" a partir de "informe.pdf".
+ *
+ * El sufijo llega traducido desde los recursos: es parte del nombre que vera el usuario
+ * en el selector de guardado, no un detalle interno.
+ */
+private fun mergedNameFor(displayName: String?, suffix: String): String {
     val base = displayName?.substringBeforeLast('.')?.takeIf { it.isNotBlank() }
-        ?: return "unido.pdf"
-    return "$base-unido.pdf"
+        ?: return "$suffix.pdf"
+    return "$base-$suffix.pdf"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
