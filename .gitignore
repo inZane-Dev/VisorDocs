@@ -11,5 +11,11 @@ local.properties
 /app/build/
 *.apk
 *.aab
+
+# Credenciales de firma. Nunca deben subirse: quien tenga el keystore y su
+# contrasena puede publicar actualizaciones que el sistema aceptara como si
+# fueran tuyas.
 *.keystore
+*.jks
+keystore.properties
 !debug.keystore

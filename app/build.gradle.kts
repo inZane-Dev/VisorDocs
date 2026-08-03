@@ -1,10 +1,29 @@
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.util.Properties
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
 }
+
+/**
+ * Credenciales de firma, leidas de un archivo que NO esta en el repositorio.
+ *
+ * Antes cada version publicada se firmaba a mano con un keystore de usar y tirar, lo
+ * que hacia imposible actualizar la app: Android solo acepta una actualizacion si viene
+ * firmada con la misma clave que la version instalada.
+ *
+ * Si el archivo no existe —al clonar el repositorio, o en integracion continua— la
+ * compilacion NO falla: `release` se queda sin firma de publicacion y usa la de
+ * depuracion. Asi cualquiera puede compilar el proyecto sin tener la clave privada.
+ */
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("keystore.properties")
+    if (file.exists()) file.inputStream().use { load(it) }
+}
+val hasSigningKey = keystoreProperties.getProperty("storeFile")
+    ?.let { rootProject.file(it).exists() } == true
 
 android {
     namespace = "com.visordocs"
@@ -19,9 +38,31 @@ android {
         // minSdk 28 (Android 9): es el minimo que exige androidx.pdf.
         minSdk = 28
         targetSdk = 36
+        // Ambos suben en cada publicacion. `versionCode` es el que mira Android para
+        // decidir si un APK es mas nuevo que el instalado: si no sube, el sistema
+        // rechaza la actualizacion. `versionName` es solo el texto que ve la persona.
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    signingConfigs {
+        if (hasSigningKey) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+
+                // v1 es la firma antigua, dentro del propio ZIP; con minSdk 28 ningun
+                // dispositivo la necesita. v3 se pide explicitamente porque es la que
+                // permite ROTAR la clave: si algun dia esta se filtra, se puede sustituir
+                // sin que los telefonos rechacen la actualizacion por firma distinta.
+                enableV1Signing = false
+                enableV2Signing = true
+                enableV3Signing = true
+            }
+        }
     }
 
     buildTypes {
@@ -32,6 +73,9 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+            if (hasSigningKey) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
