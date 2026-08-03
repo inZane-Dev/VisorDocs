@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.graphics.pdf.PdfRenderer
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import androidx.core.graphics.createBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.Closeable
@@ -60,7 +61,7 @@ class LegacyPdfDocument private constructor(
                 } else {
                     (page.height.toFloat() / page.width.toFloat() * width).toInt().coerceAtLeast(1)
                 }
-                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                val bitmap = createBitmap(width, height)
                 // PdfRenderer no pinta el fondo de la pagina; sin esto sale negro.
                 bitmap.eraseColor(Color.WHITE)
                 page.render(bitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)

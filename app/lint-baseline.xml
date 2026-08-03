@@ -89,26 +89,4 @@
             column="38"/>
     </issue>
 
-    <issue
-        id="UseKtx"
-        message="Use the KTX extension function `String.toUri` instead?"
-        errorLine1="                        uri = Uri.parse(values[0]),"
-        errorLine2="                              ~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/visordocs/model/DocumentSource.kt"
-            line="35"
-            column="31"/>
-    </issue>
-
-    <issue
-        id="UseKtx"
-        message="Use the KTX function `createBitmap` instead?"
-        errorLine1="                val bitmap = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)"
-        errorLine2="                             ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~">
-        <location
-            file="src/main/java/com/visordocs/ui/viewer/render/pdf/LegacyPdfDocument.kt"
-            line="63"
-            column="30"/>
-    </issue>
-
 </issues>
