@@ -6,15 +6,15 @@ Visor de documentos para Android, con integración en el menú "Abrir con" del s
 | Formato | Estado |
 |---|---|
 | PDF | Zoom, scroll continuo, búsqueda y selección de texto, **unir varios en uno** |
-| `.docx` `.docm` | Encabezados, negrita/cursiva/subrayado/tachado, listas, tablas, alineación |
-| `.xlsx` `.xlsm` | Todas las hojas, cadenas compartidas, numeración de filas fiel |
+| `.docx` `.docm` | Encabezados, negrita/cursiva/subrayado/tachado, **color y resaltado**, listas, tablas |
+| `.xlsx` `.xlsm` | Todas las hojas, **colores de celda y letra**, numeración de filas fiel |
 | `.pptx` `.pptm` | Una tarjeta por diapositiva, en el orden de la presentación |
 | `.odt` `.ods` `.odp` | LibreOffice/OpenOffice, con su tabla de estilos |
 | `.rtf` | Formato, acentos (escape ANSI y Unicode), comillas tipográficas |
 | `.epub` | Capítulos en el orden del *spine*, XHTML saneado por lista blanca |
 | `.csv` `.tsv` | Tabla, con separador autodetectado y comillas del formato |
 | `.html` `.htm` | Se renderiza **como página**, con sus propios estilos |
-| Texto y código | `.txt` `.md` `.log` `.json` `.yaml` `.ini` `.kt` `.py` `.js` `.sql`… |
+| Texto y código | `.txt` `.md` `.log` `.json` `.yaml` `.ini` `.kt` `.py` `.js` `.sql`… con zoom |
 | **Sin extensión** | Se identifica por el contenido: texto, HTML, RTF o SVG |
 | Imágenes | JPG, PNG, WebP, GIF, BMP, **HEIC/HEIF/AVIF**, con zoom |
 | `.svg` | Vectorial, dibujado por el WebView |
@@ -283,8 +283,8 @@ conversión, en vez de dar un error genérico.
 ## Pruebas
 
 ```
-gradlew.bat testDebugUnitTest          # 71 pruebas en la JVM, segundos
-gradlew.bat connectedDebugAndroidTest  # 91 pruebas en dispositivo
+gradlew.bat testDebugUnitTest          # 87 pruebas en la JVM, segundos
+gradlew.bat connectedDebugAndroidTest  # 98 pruebas en dispositivo
 gradlew.bat lintDebug                  # sin avisos nuevos
 ```
 
@@ -373,6 +373,10 @@ gradlew.bat assembleRelease
   respetando el límite que impone el sistema.
 - **Buscar texto solo en PDF** con el motor de Jetpack. Los formatos que pasan por el
   WebView no tienen búsqueda, aunque `findAllAsync` estaría disponible.
+- **Colores parciales.** Se leen los que la celda o el tramo de texto declaran
+  directamente. Un color que venga heredado de un estilo con nombre de Word
+  (`styles.xml`) no se resuelve todavía, así que un encabezado azul de plantilla sale sin
+  su color.
 
 ### Cómo sobrevive el documento a la muerte del proceso
 
@@ -389,6 +393,37 @@ excepción—. Por eso `retainAccess` suelta las anteriores cada vez: siempre ha
 
 Los URI que llegan por "Abrir con" desde mensajería no admiten permiso persistente; ahí
 el documento se abre igual, pero no sobrevivirá a la muerte del proceso.
+
+### Colores de los documentos
+
+Excel aporta relleno y color de letra por celda; Word, color de texto y resaltado.
+Resolverlos tiene más reglas ocultas de las que parece:
+
+- Un `<color>` viene en **cuatro notaciones**: `rgb` (ARGB, los dos primeros dígitos son
+  la opacidad), `indexed` (una paleta de 56 colores que no está en el archivo y hay que
+  conocer), `theme` + `tint`, y `auto`.
+- La lista `<fills>` empieza siempre con **dos rellenos reservados** que Excel escribe
+  aunque nadie los use: el primer relleno real es el índice 2.
+- El orden del tema **está intercambiado**: `theme1.xml` declara `dk1, lt1, dk2, lt2…`
+  pero la numeración de las hojas de cálculo empieza por `lt1`. Confundirlos pinta el
+  texto del color del fondo.
+- El `tint` se aplica sobre la **luminosidad en HSL**, no subiendo los canales RGB por
+  igual: eso último lava el color y lo vuelve grisáceo.
+- Word no usa índices, escribe el **nombre** (`w:themeColor="accent1"`).
+
+#### Cómo conviven con el modo oscuro
+
+El convertidor no conoce el tema —es lo que permite cambiar a oscuro sin volver a
+analizar el archivo—, así que los colores tienen que ser correctos en ambos. Dos reglas:
+
+1. **Con relleno**, la celda lleva también un color de letra explícito. Si el que declara
+   el documento no contrasta con su propio fondo, se sustituye por blanco o negro. Un
+   fondo amarillo sale con letra negra en los dos temas.
+2. **Sin relleno**, un color de letra casi negro o casi blanco **no se aplica**: es el
+   color por omisión escrito de otra forma, y respetarlo pintaría texto negro sobre fondo
+   negro. Los colores de verdad (un rojo de alerta) sí se aplican, y se leen en ambos.
+
+El resultado es que las celdas con color son islas autónomas y el resto sigue al tema.
 
 ### Idiomas
 

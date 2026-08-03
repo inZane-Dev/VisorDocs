@@ -59,6 +59,8 @@ object DocxMarkup {
         var underline = false
         var strike = false
         var vertAlign: String? = null
+        var textColor: OfficeColor.Rgb? = null
+        var highlight: OfficeColor.Rgb? = null
 
         // Dentro de <w:rPr> las etiquetas w:b / w:i describen el formato. Fuera de el
         // esas mismas etiquetas pueden aparecer con otro significado, asi que se
@@ -123,6 +125,8 @@ object DocxMarkup {
                         underline = false
                         strike = false
                         vertAlign = null
+                        textColor = null
+                        highlight = null
                     }
 
                     "w:rPr" -> inRunProps = true
@@ -133,11 +137,25 @@ object DocxMarkup {
                     "w:strike" -> if (inRunProps) strike = parser.isToggleOn()
                     "w:vertAlign" -> if (inRunProps) vertAlign = parser.attr("val")
 
+                    // El color declarado puede ser "auto", que significa "el que decida
+                    // la aplicacion": ahi manda el tema y no se toca nada.
+                    "w:color" -> if (inRunProps) textColor = parser.runColor()
+                    "w:highlight" -> if (inRunProps) highlight = OfficeColor.highlight(parser.attr("val"))
+
                     "w:t" -> {
                         val text = parser.nextText()
                         if (text.isNotEmpty()) {
                             paragraphContent.append(
-                                wrapRun(text.escapeHtml(), bold, italic, underline, strike, vertAlign),
+                                wrapRun(
+                                    text.escapeHtml(),
+                                    bold,
+                                    italic,
+                                    underline,
+                                    strike,
+                                    vertAlign,
+                                    textColor,
+                                    highlight,
+                                ),
                             )
                         }
                         // nextText() ya consumio el END_TAG; continue evita avanzar de mas.
@@ -206,6 +224,8 @@ object DocxMarkup {
         underline: Boolean,
         strike: Boolean,
         vertAlign: String?,
+        textColor: OfficeColor.Rgb?,
+        highlight: OfficeColor.Rgb?,
     ): String {
         var html = text
         if (bold) html = "<strong>$html</strong>"
@@ -216,8 +236,53 @@ object DocxMarkup {
             "superscript" -> html = "<sup>$html</sup>"
             "subscript" -> html = "<sub>$html</sub>"
         }
+
+        colorStyle(textColor, highlight)?.let { style ->
+            html = "<span style=\"$style\">$html</span>"
+        }
         return html
     }
+
+    /**
+     * Estilo CSS del tramo, o `null` si el documento no aporta color.
+     *
+     * Con resaltado, el texto lleva SIEMPRE un color explicito: el resaltado de Word es
+     * un fondo solido y claro (amarillo, cian), asi que sin fijar la letra el tema oscuro
+     * la pintaria blanca sobre amarillo y no se leeria nada.
+     *
+     * Sin resaltado, un color casi negro o casi blanco no se aplica: es el color por
+     * omision escrito de otra forma, y respetarlo romperia el modo oscuro.
+     */
+    private fun colorStyle(textColor: OfficeColor.Rgb?, highlight: OfficeColor.Rgb?): String? {
+        if (highlight != null) {
+            val readable = textColor
+                ?.takeIf { OfficeColor.contrast(it, highlight) >= MIN_CONTRAST }
+                ?: highlight.readableForeground()
+            return "background:${highlight.toCss()};color:${readable.toCss()};"
+        }
+
+        if (textColor != null && !textColor.isNearDefault) {
+            return "color:${textColor.toCss()};"
+        }
+        return null
+    }
+
+    /**
+     * `<w:color w:val="auto"/>` significa "que decida la aplicacion", y ahi manda el tema.
+     *
+     * Cuando no hay valor directo puede haber uno del tema, que Word escribe por NOMBRE
+     * (`w:themeColor="accent1"`) y no por indice como las hojas de calculo.
+     */
+    private fun XmlPullParser.runColor(): OfficeColor.Rgb? {
+        val value = attr("val")
+        if (value != null && value != "auto") {
+            return OfficeColor.resolve(rgb = value, indexed = null, themeIndex = null, tint = null)
+        }
+        return OfficeColor.themeByName(attr("themeColor"), attr("themeTint"))
+    }
+
+    /** Diferencia de luminancia minima para dar por legible un texto sobre su fondo. */
+    private const val MIN_CONTRAST = 0.35f
 
     /**
      * Traduce el estilo de parrafo de Word a una etiqueta HTML.

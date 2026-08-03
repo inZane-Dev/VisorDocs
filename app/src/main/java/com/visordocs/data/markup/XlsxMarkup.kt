@@ -25,6 +25,7 @@ object XlsxMarkup {
     fun convert(pkg: ZipPackage, labels: MarkupLabels): Markup {
         val sharedStrings = readSharedStrings(pkg)
         val styles = ExcelNumberFormats.read(pkg)
+        val colors = ExcelCellColors.read(pkg)
         val relations = pkg.relationships("xl/_rels/workbook.xml.rels")
         val sheets = readSheetList(pkg)
 
@@ -42,7 +43,7 @@ object XlsxMarkup {
                 .append("</div>\n")
             out.append("<h2>").append(sheet.name.escapeHtml()).append("</h2>\n")
 
-            val table = renderSheet(xml, sharedStrings, styles)
+            val table = renderSheet(xml, sharedStrings, styles, colors)
             out.append(table.body)
             if (table.truncated) truncated = true
             rendered++
@@ -74,12 +75,17 @@ object XlsxMarkup {
 
     // ---------------------------------------------------------------- celdas
 
-    private data class Cell(val text: String, val numeric: Boolean)
+    private data class Cell(
+        val text: String,
+        val numeric: Boolean,
+        val color: ExcelCellColors.CellStyle = ExcelCellColors.Styles.Empty,
+    )
 
     private fun renderSheet(
         xml: String,
         sharedStrings: List<String>,
         styles: ExcelNumberFormats.Styles,
+        colors: ExcelCellColors.Styles,
     ): Markup {
         // Se indexa por el numero de fila real, el que trae el atributo `r`. Excel
         // omite las filas vacias del archivo, asi que numerarlas por orden de
@@ -129,7 +135,7 @@ object XlsxMarkup {
                         if (row != null && raw != null && cellCol in 0 until MAX_COLS) {
                             val kind = styles.kindOf(cellStyle)
                             resolveCell(raw, cellType, kind, sharedStrings)?.let { cell ->
-                                row[cellCol] = cell
+                                row[cellCol] = cell.copy(color = colors.styleOf(cellStyle))
                                 if (cellCol + 1 > maxCol) maxCol = cellCol + 1
                             }
                         }
@@ -172,7 +178,10 @@ object XlsxMarkup {
                 if (cell == null) {
                     out.append("<td></td>")
                 } else {
-                    out.append(if (cell.numeric) "<td class=\"num\">" else "<td>")
+                    out.append("<td")
+                    if (cell.numeric) out.append(" class=\"num\"")
+                    cell.color.toCssStyle()?.let { out.append(" style=\"").append(it).append('"') }
+                    out.append('>')
                     out.append(cell.text.escapeHtml()).append("</td>")
                 }
             }

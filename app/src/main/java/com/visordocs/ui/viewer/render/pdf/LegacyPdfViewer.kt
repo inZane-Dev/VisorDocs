@@ -4,10 +4,6 @@ import android.graphics.Bitmap
 import android.net.Uri
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.calculatePan
-import androidx.compose.foundation.gestures.calculateZoom
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -36,7 +32,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.input.pointer.PointerInputScope
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -46,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.visordocs.R
 import com.visordocs.ui.common.LoadingView
 import com.visordocs.ui.common.MessageView
+import com.visordocs.ui.viewer.render.detectPinchZoom
 
 private const val MIN_SCALE = 1f
 private const val MAX_SCALE = 5f
@@ -209,31 +205,5 @@ private fun PdfPageItem(
         } else {
             CircularProgressIndicator(modifier = Modifier.size(28.dp))
         }
-    }
-}
-
-/**
- * Detecta zoom y arrastre solo cuando hay dos dedos o mas.
- *
- * `detectTransformGestures` consumiria tambien los gestos de un solo dedo y dejaria
- * la lista sin scroll vertical. Al no consumir los eventos de un solo puntero, estos
- * llegan intactos al LazyColumn.
- */
-private suspend fun PointerInputScope.detectPinchZoom(
-    onTransform: (zoomChange: Float, panChange: Offset) -> Unit,
-) {
-    awaitEachGesture {
-        awaitFirstDown(requireUnconsumed = false)
-        do {
-            val event = awaitPointerEvent()
-            if (event.changes.size >= 2) {
-                val zoomChange = event.calculateZoom()
-                val panChange = event.calculatePan()
-                if (zoomChange != 1f || panChange != Offset.Zero) {
-                    onTransform(zoomChange, panChange)
-                    event.changes.forEach { it.consume() }
-                }
-            }
-        } while (event.changes.any { it.pressed })
     }
 }
