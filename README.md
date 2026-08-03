@@ -65,13 +65,9 @@ En este equipo no había JDK ni Android SDK, así que hay que instalarlos.
    gradlew.bat installDebug
    ```
 
-> **Nota sobre el Gradle Wrapper:** el repositorio incluye
-> `gradle/wrapper/gradle-wrapper.properties` pero no el `.jar` binario ni los scripts
-> `gradlew`. Android Studio los regenera durante el primer sync. Si prefieres hacerlo
-> a mano, desde la carpeta del proyecto:
-> ```
-> gradle wrapper --gradle-version 8.14.3
-> ```
+> **Nota sobre el Gradle Wrapper:** el repositorio lo incluye completo (los scripts
+> `gradlew`/`gradlew.bat` y el `.jar`), así que no hace falta tener Gradle instalado:
+> el propio wrapper descarga la versión correcta la primera vez.
 
 ---
 
@@ -165,6 +161,15 @@ en `PdfEngineSupport.kt`.
 Con un PDF abierto, el botón **+** de la barra añade otros a la cola y el de guardar
 escribe el resultado donde el usuario elija con el selector del sistema. El documento
 abierto va primero.
+
+La cola se ve entera, con el nombre de cada documento y su posición final. Cada uno se
+puede **quitar por separado** o **subir y bajar** hasta dejar el orden que toca. Antes
+era una sola línea con el número de documentos, y equivocarse en el tercero obligaba a
+descartar los tres y volver a empezar.
+
+También se puede seleccionar **varios PDF a la vez y compartirlos** a VisorDocs
+(`ACTION_SEND_MULTIPLE`) desde Archivos, Drive o cualquier gestor: se abre el primero y
+el resto queda encolado, listo para guardar.
 
 Android no puede hacer esto por su cuenta: `PdfRenderer` lee y `PdfDocument` escribe
 páginas nuevas, pero no existe forma de copiar una página de un documento a otro. La
@@ -271,9 +276,14 @@ conversión, en vez de dar un error genérico.
 
 ```
 gradlew.bat testDebugUnitTest          # 71 pruebas en la JVM, segundos
-gradlew.bat connectedDebugAndroidTest  # 52 pruebas en dispositivo
+gradlew.bat connectedDebugAndroidTest  # 79 pruebas en dispositivo
 gradlew.bat lintDebug                  # sin avisos nuevos
 ```
+
+Las dos primeras y el lint se ejecutan solas en cada empujón: ver
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml). Las instrumentadas se quedan
+fuera de la integración continua porque exigen arrancar un emulador, que multiplica por
+varios el tiempo de cada ejecución; se lanzan a mano antes de publicar.
 
 Lint **forma parte de la compilación**: `abortOnError` y `warningsAsErrors` están
 activos, con una línea base que acepta los avisos que ya existían. Cualquier aviso nuevo
@@ -286,7 +296,10 @@ la JVM exigiría Robolectric o un parser alternativo; ejecutarlos en el emulador
 fiel y no añade dependencias.
 
 En `src/test` va lo que es Kotlin puro: RTF, CSV, SVG, el escapado de HTML, la lectura de
-texto y el lector de ZIP. En `src/androidTest`, todo lo que pasa por XML.
+texto y el lector de ZIP. En `src/androidTest`, todo lo que pasa por XML, la unión de PDF
+y la cascada de identificación de formato — esta última necesita un `ContentResolver`, y
+se le pasan archivos reales escritos en la caché en lugar de un doble de pruebas, para
+que se ejercite el camino de lectura de verdad.
 
 Varias pruebas son **regresiones de fallos reales** encontrados durante el desarrollo, y
 lo dicen en su nombre: el formato de Word que se derramaba al siguiente tramo de texto,
@@ -325,10 +338,36 @@ renderizador. Solo hay que tocar `ui/viewer/` si trae una forma de pintar que no
 existe todavía — y entonces se añade una variante a `DocumentContent` y su rama en
 `ViewerScreen`.
 
+## Publicar una versión
+
+El `release` se firma con una clave propia, leída de `keystore.properties`, que **no está
+en el repositorio** (ni el `.keystore`): quien tenga esos dos archivos puede publicar
+actualizaciones que el sistema aceptaría como legítimas.
+
+Si el archivo no existe —al clonar el proyecto, o en integración continua— la compilación
+**no falla**: el `release` se firma con la clave de depuración. Así cualquiera puede
+compilar sin tener la clave privada.
+
+Para publicar hay que subir **los dos** números de `defaultConfig`: `versionCode`, que es
+el que mira Android para saber si un APK es más nuevo que el instalado, y `versionName`,
+que es el texto que ve la persona.
+
+```
+gradlew.bat assembleRelease
+```
+
 ## Pendiente
 
-Los binarios **`.doc`/`.xls`/`.ppt`** quedan fuera del alcance (ver arriba). Es lo único
-que sigue abierto de la lista original.
+- Los binarios **`.doc`/`.xls`/`.ppt`** quedan fuera del alcance (ver arriba).
+- **Solo está en español.** `values/strings.xml` es el idioma por omisión, así que un
+  teléfono en inglés también lo verá en español.
+- **Sin historial de recientes.** Abrir, cerrar y volver obliga a buscar el archivo otra
+  vez. No es un añadido menor: `retainAccess` está escrito a propósito para conservar
+  **un solo** permiso persistente, y unos recientes de verdad obligarían a rehacerlo
+  respetando el límite que impone el sistema.
+- **Sin imprimir ni compartir** el documento abierto.
+- **Buscar texto solo en PDF** con el motor de Jetpack. Los formatos que pasan por el
+  WebView no tienen búsqueda, aunque `findAllAsync` estaría disponible.
 
 ### Cómo sobrevive el documento a la muerte del proceso
 
@@ -378,3 +417,8 @@ texto plano.
 - **`.avif`** solo lo decodifica Android 12 o superior; en versiones anteriores el visor
   avisa de que no se pudo abrir en lugar de fallar en silencio.
 - **`.rtf`** conserva formato y acentos, pero no imágenes ni la cuadrícula de las tablas.
+
+## Licencia
+
+[MIT](LICENSE). Puedes usarlo, modificarlo, distribuirlo e incluso venderlo. La única
+condición es conservar el aviso de autoría y el texto de la licencia en las copias.
