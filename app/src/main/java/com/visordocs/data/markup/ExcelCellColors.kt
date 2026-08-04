@@ -48,7 +48,7 @@ internal object ExcelCellColors {
 
     fun read(pkg: ZipPackage): Styles {
         val xml = pkg.text("xl/styles.xml") ?: return Styles.None
-        val theme = readTheme(pkg)
+        val theme = OfficeTheme.read(pkg, "xl/theme/theme1.xml")
 
         val fontColors = mutableListOf<OfficeColor.Rgb?>()
         val fillColors = mutableListOf<OfficeColor.Rgb?>()
@@ -150,48 +150,6 @@ internal object ExcelCellColors {
         }
     }
 
-    /**
-     * Paleta del tema del documento, en el orden que indexa el atributo `theme`.
-     *
-     * `theme1.xml` los declara como `dk1, lt1, dk2, lt2, accent1..6, hlink, folHlink`,
-     * pero la numeracion de las hojas de calculo intercambia los dos primeros pares. Sin
-     * ese cambio, el texto sale del color del fondo y viceversa.
-     */
-    private fun readTheme(pkg: ZipPackage): List<Int> {
-        val xml = pkg.text("xl/theme/theme1.xml") ?: return emptyList()
-
-        val ordered = mutableListOf<Int>()
-        var inScheme = false
-        var pending: String? = null
-
-        val parser = parserFor(xml)
-        while (parser.eventType != XmlPullParser.END_DOCUMENT) {
-            when (parser.eventType) {
-                XmlPullParser.START_TAG -> when (val name = parser.name) {
-                    "clrScheme" -> inScheme = true
-                    "srgbClr" -> if (inScheme && pending != null) {
-                        parser.attr("val")?.toIntOrNull(16)?.let { ordered += it }
-                        pending = null
-                    }
-                    // El sistema usa nombres ("windowText"); se resuelve por su ultimo valor.
-                    "sysClr" -> if (inScheme && pending != null) {
-                        parser.attr("lastClr")?.toIntOrNull(16)?.let { ordered += it }
-                        pending = null
-                    }
-                    else -> if (inScheme && name in SCHEME_ORDER) pending = name
-                }
-
-                XmlPullParser.END_TAG -> if (parser.name == "clrScheme") inScheme = false
-            }
-            parser.next()
-        }
-
-        if (ordered.size < SCHEME_ORDER.size) return emptyList()
-
-        // dk1, lt1, dk2, lt2 -> lt1, dk1, lt2, dk2
-        return listOf(ordered[1], ordered[0], ordered[3], ordered[2]) + ordered.drop(4)
-    }
-
     private fun XmlPullParser.color(theme: List<Int>): OfficeColor.Rgb? {
         if (attr("auto") == "1") return null
         return OfficeColor.resolve(
@@ -207,10 +165,4 @@ internal object ExcelCellColors {
 
     /** Diferencia de luminancia minima para dar por legible un texto sobre su fondo. */
     private const val MIN_CONTRAST = 0.35f
-
-    private val SCHEME_ORDER = listOf(
-        "dk1", "lt1", "dk2", "lt2",
-        "accent1", "accent2", "accent3", "accent4", "accent5", "accent6",
-        "hlink", "folHlink",
-    )
 }

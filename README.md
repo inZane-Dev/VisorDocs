@@ -106,6 +106,10 @@ app/src/main/java/com/visordocs/
 │   │   ├── OdtMarkup.kt · OdsMarkup.kt · OdpMarkup.kt · OdfStyles.kt
 │   │   ├── EpubMarkup.kt · RtfMarkup.kt · CsvMarkup.kt · SvgMarkup.kt
 │   │   ├── WordNumbering.kt        Viñeta o número: la cadena de numbering.xml
+│   │   ├── WordStyles.kt           Colores heredados de los estilos de Word
+│   │   ├── OfficeColor.kt          rgb / indexed / theme+tint → CSS, y legibilidad
+│   │   ├── OfficeTheme.kt          Paleta del tema, común a Word y Excel
+│   │   ├── ExcelCellColors.kt      Relleno y color de letra por celda
 │   │   ├── ExcelNumberFormats.kt   Números de serie → fechas, con el fallo de 1900
 │   │   └── EmbeddedImages.kt       Imágenes del documento → data: URI, con presupuesto
 │   └── source/
@@ -126,6 +130,7 @@ app/src/main/java/com/visordocs/
             ├── HtmlDocument.kt     Envoltorio HTML + colores del tema
             ├── MarkupViewer.kt     WebView aislado (sin JS, sin red, sin navegación)
             ├── WebViewWarmup.kt    Arranca el motor antes de que haga falta
+            ├── PinchZoom.kt        Pellizco que no le roba el scroll de un dedo
             ├── PlainTextViewer.kt · PictureViewer.kt
             └── pdf/                Los dos motores de PDF
 ```
@@ -284,7 +289,7 @@ conversión, en vez de dar un error genérico.
 
 ```
 gradlew.bat testDebugUnitTest          # 87 pruebas en la JVM, segundos
-gradlew.bat connectedDebugAndroidTest  # 98 pruebas en dispositivo
+gradlew.bat connectedDebugAndroidTest  # 108 pruebas en dispositivo
 gradlew.bat lintDebug                  # sin avisos nuevos
 ```
 
@@ -373,10 +378,8 @@ gradlew.bat assembleRelease
   respetando el límite que impone el sistema.
 - **Buscar texto solo en PDF** con el motor de Jetpack. Los formatos que pasan por el
   WebView no tienen búsqueda, aunque `findAllAsync` estaría disponible.
-- **Colores parciales.** Se leen los que la celda o el tramo de texto declaran
-  directamente. Un color que venga heredado de un estilo con nombre de Word
-  (`styles.xml`) no se resuelve todavía, así que un encabezado azul de plantilla sale sin
-  su color.
+- **Colores en OpenDocument y PowerPoint.** Word y Excel sí conservan los suyos; `.odt`,
+  `.ods`, `.odp` y `.pptx` todavía no.
 
 ### Cómo sobrevive el documento a la muerte del proceso
 
@@ -410,6 +413,23 @@ Resolverlos tiene más reglas ocultas de las que parece:
 - El `tint` se aplica sobre la **luminosidad en HSL**, no subiendo los canales RGB por
   igual: eso último lava el color y lo vuelve grisáceo.
 - Word no usa índices, escribe el **nombre** (`w:themeColor="accent1"`).
+
+#### La herencia de estilos de Word
+
+Casi ningún documento real pinta el color en el propio texto: un título es azul porque lo
+dice el estilo `Heading1`, y ese estilo suele heredar de otro. Leyendo solo el `<w:rPr>`
+del tramo, un documento con plantilla corporativa sale entero en negro.
+
+La cascada va de menos a más prioridad:
+
+```
+docDefaults  →  estilo de párrafo (w:pStyle)  →  estilo de carácter (w:rStyle)  →  el propio tramo
+```
+
+Las cadenas de `w:basedOn` se aplanan **una vez al abrir** el documento, no en cada tramo
+de texto. Y con un tope de saltos: `basedOn` es una referencia por nombre y nada impide
+que dos estilos se apunten mutuamente — sin ese corte, abrir un documento así colgaría la
+app.
 
 #### Cómo conviven con el modo oscuro
 

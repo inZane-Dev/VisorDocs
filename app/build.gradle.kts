@@ -41,8 +41,8 @@ android {
         // Ambos suben en cada publicacion. `versionCode` es el que mira Android para
         // decidir si un APK es mas nuevo que el instalado: si no sube, el sistema
         // rechaza la actualizacion. `versionName` es solo el texto que ve la persona.
-        versionCode = 3
-        versionName = "1.2.0"
+        versionCode = 4
+        versionName = "1.3.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 

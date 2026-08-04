@@ -32,6 +32,8 @@ object DocxMarkup {
     fun convert(pkg: ZipPackage): Markup {
         val xml = pkg.text("word/document.xml") ?: return Markup.Empty
         val numbering = WordNumbering.read(pkg)
+        // Casi ningun documento pinta el color en el propio texto: lo hereda del estilo.
+        val styles = WordStyles.read(pkg)
         val images = EmbeddedImages(pkg)
         // Las imagenes se referencian por id de relacion, igual que las hojas o las
         // diapositivas: el XML nunca nombra el archivo directamente.
@@ -59,6 +61,7 @@ object DocxMarkup {
         var underline = false
         var strike = false
         var vertAlign: String? = null
+        var runStyle: String? = null
         var textColor: OfficeColor.Rgb? = null
         var highlight: OfficeColor.Rgb? = null
 
@@ -125,11 +128,16 @@ object DocxMarkup {
                         underline = false
                         strike = false
                         vertAlign = null
+                        runStyle = null
                         textColor = null
                         highlight = null
                     }
 
                     "w:rPr" -> inRunProps = true
+
+                    // Estilo de caracter: pesa mas que el del parrafo y menos que lo
+                    // que el propio tramo declare.
+                    "w:rStyle" -> if (inRunProps) runStyle = parser.attr("val")
 
                     "w:b" -> if (inRunProps) bold = parser.isToggleOn()
                     "w:i" -> if (inRunProps) italic = parser.isToggleOn()
@@ -145,6 +153,16 @@ object DocxMarkup {
                     "w:t" -> {
                         val text = parser.nextText()
                         if (text.isNotEmpty()) {
+                            // De menos a mas especifico: valores del documento, estilo de
+                            // parrafo, estilo de caracter y por ultimo lo que declare el
+                            // propio tramo.
+                            val effective = styles.defaults
+                                .overriddenBy(styles.of(paragraphStyle))
+                                .overriddenBy(styles.of(runStyle))
+                                .overriddenBy(
+                                    WordStyles.RunColor(text = textColor, highlight = highlight),
+                                )
+
                             paragraphContent.append(
                                 wrapRun(
                                     text.escapeHtml(),
@@ -153,8 +171,8 @@ object DocxMarkup {
                                     underline,
                                     strike,
                                     vertAlign,
-                                    textColor,
-                                    highlight,
+                                    effective.text,
+                                    effective.highlight,
                                 ),
                             )
                         }
